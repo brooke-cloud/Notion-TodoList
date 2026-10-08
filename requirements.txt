@@ -1,0 +1,3 @@
+python-dotenv>=1.0
+requests>=2.31
+PySide6>=6.8,<7

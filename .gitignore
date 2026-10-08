@@ -1,0 +1,42 @@
+# Sensitive configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+
+# Local user settings and data
+settings.json
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.cache/
+
+# PyInstaller
+build/
+dist/
+*.exe
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files and test state
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+tests/.v4_smoke_state.json
