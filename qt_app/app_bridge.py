@@ -127,7 +127,12 @@ class AppBridge(QObject):
     def reportHistory(self):return self._report_history
 
     @Slot(str)
-    def selectSection(self,value):self._section=value; self.sectionChanged.emit(); self.refreshAnalytics() if value=="analytics" else None
+    def selectSection(self,value):
+        if value=="tasks":
+            self._selected_goal_id=""
+            self.task_model.set_filters(goal_id="")
+            self.selectedGoalChanged.emit();self.summaryChanged.emit()
+        self._section=value; self.sectionChanged.emit(); self.refreshAnalytics() if value=="analytics" else None
     @Slot()
     def loadAll(self):
         if not self.service:return
@@ -595,6 +600,15 @@ class AppBridge(QObject):
     def resetFocus(self):self.todo.set_timer_mode(self.state.timer_minutes); self._timer.stop(); self.focusChanged.emit()
     @Slot(int)
     def setFocusMode(self,minutes):self.todo.set_timer_mode(minutes); self._timer.stop(); self.focusChanged.emit()
+    @Slot(int,int)
+    def setFocusDurations(self,focus_minutes,break_minutes):
+        focus_minutes=max(1,min(180,int(focus_minutes)))
+        break_minutes=max(1,min(60,int(break_minutes)))
+        self.state.settings["default_focus_minutes"]=focus_minutes
+        self.state.settings["default_break_minutes"]=break_minutes
+        self._save_settings();self.settingsChanged.emit()
+        self.todo.set_timer_mode(focus_minutes);self._timer.stop();self.focusChanged.emit()
+        self.toastRequested.emit(f"专注 {focus_minutes} 分钟 · 休息 {break_minutes} 分钟","success")
     def _tick_focus(self):self.todo.tick_timer(); self.focusChanged.emit(); self._timer.stop() if not self.state.timer_running else None
     @Slot()
     def refreshAnalytics(self):

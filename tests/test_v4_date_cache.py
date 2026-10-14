@@ -102,6 +102,25 @@ class DateCacheTests(unittest.TestCase):
         self.assertEqual(self.bridge.task_model.idAt(0), "cached")
         self.assertEqual(self.bridge.taskLoadState, "refreshing")
 
+    def test_task_section_clears_goal_filter_without_reloading(self):
+        goal_task=Task("goal-task","Goal task","中","工作",date=date.today().isoformat(),goal_id="goal")
+        free_task=Task("free-task","Free task","中","学习",date=date.today().isoformat())
+        self.bridge.task_model.set_tasks([goal_task,free_task])
+        self.bridge.openGoal("goal")
+        self.assertEqual(self.bridge.task_model.rowCount(),1)
+        self.bridge.selectSection("tasks")
+        self.assertEqual(self.bridge.task_model.rowCount(),2)
+
+    def test_custom_focus_and_break_durations_apply_immediately(self):
+        self.bridge._save_settings=lambda:None
+        self.bridge.setFocusDurations(45,10)
+        self.assertEqual(self.bridge.settings["default_focus_minutes"],45)
+        self.assertEqual(self.bridge.settings["default_break_minutes"],10)
+        self.assertEqual(self.bridge.focusMode,45)
+        self.assertEqual(self.bridge.focusTime,"45:00")
+        self.bridge.setFocusMode(self.bridge.settings["default_break_minutes"])
+        self.assertEqual(self.bridge.focusTime,"10:00")
+
     def test_uncached_switch_returns_under_50ms_during_two_second_network_delay(self):
         tomorrow = date.today() + timedelta(days=1); self.service.delays[tomorrow] = 1.2
         started = time.perf_counter(); self.bridge.setDateView("明天"); elapsed = (time.perf_counter() - started) * 1000

@@ -32,7 +32,7 @@ Item {
             }
         }
         Column { width: 300; height: parent.height; spacing: 12
-            FocusTimer { width: parent.width; timeText: appBridge.focusTime; running: appBridge.focusRunning; mode: appBridge.focusMode; taskTitle: appBridge.focusTaskTitle; onStartRequested: appBridge.startFocus(); onPauseRequested: appBridge.pauseFocus(); onResetRequested: appBridge.resetFocus(); onModeRequested: (minutes) => appBridge.setFocusMode(minutes) }
+            FocusTimer { width: parent.width; timeText: appBridge.focusTime; running: appBridge.focusRunning; mode: appBridge.focusMode; focusMinutes: appBridge.settings.default_focus_minutes||25; breakMinutes: appBridge.settings.default_break_minutes||5; taskTitle: appBridge.focusTaskTitle; onStartRequested: appBridge.startFocus(); onPauseRequested: appBridge.pauseFocus(); onResetRequested: appBridge.resetFocus(); onModeRequested: (minutes) => appBridge.setFocusMode(minutes); onDurationsRequested: (focusMinutes,breakMinutes) => appBridge.setFocusDurations(focusMinutes,breakMinutes) }
             GlassPanel { width: parent.width; height: 146
                 Column { anchors.fill: parent; anchors.margins: 18; spacing: 14
                     Text { text: "\u4eca\u65e5\u7edf\u8ba1"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSection; font.bold: true }
