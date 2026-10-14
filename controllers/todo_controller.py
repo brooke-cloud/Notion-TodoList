@@ -60,7 +60,7 @@ class TodoController:
 
     def load_tasks(self, view: str, target_date: date) -> list[Task]:
         if view == "全部":
-            return self.notion_service.fetch_all_open_tasks()
+            return self.notion_service.fetch_all_tasks()
         return self.notion_service.fetch_tasks_for_date(target_date)
 
     def accept_loaded_tasks(
@@ -107,14 +107,16 @@ class TodoController:
             self.app_state.current_focus_task = new_title
 
     def toggle_task(self, task: Task) -> bool:
-        old_state = task.is_done
+        old_state, old_status = task.is_done, task.status
         new_state = not old_state
         task.is_done = new_state
+        task.status = "完成" if new_state else "未开始"
         target_date = self.app_state.current_date if task.repeat_type == "每天" else None
         try:
             self.notion_service.update_task_status(task.id, new_state, target_date)
         except Exception:
             task.is_done = old_state
+            task.status = old_status
             self._sync_task_done(task.id, old_state)
             raise
         self._sync_task_done(task.id, new_state)
@@ -147,7 +149,7 @@ class TodoController:
             raise
         self._sync_task_metadata(task.id, task.project, task.priority, task.date)
 
-    def update_task_fields(self, task: Task, title: str, project: str, priority: str, task_date: str) -> None:
+    def update_task_fields(self, task: Task, title: str, project: str, priority: str, repeat_type: str, task_date: str, status: str | None = None) -> None:
         """Persist the complete task editor with one Notion page update."""
         related = []
         seen = set()
@@ -157,18 +159,21 @@ class TodoController:
                     seen.add(id(item)); related.append(item)
         if id(task) not in seen:
             related.append(task)
-        snapshots = [(item, item.title, item.project, item.priority, item.date) for item in related]
+        snapshots = [(item, item.title, item.project, item.priority, item.repeat_type, item.date, item.status, item.is_done) for item in related]
         old_focus_title = self.app_state.current_focus_task
         for item in related:
-            item.title, item.project, item.priority, item.date = title, project, priority, task_date
+            item.title, item.project, item.priority, item.repeat_type, item.date = title, project, priority, repeat_type, task_date
+            if status is not None:
+                item.status, item.is_done = status, status == "完成"
         try:
             target_date = date.fromisoformat(task_date[:10]) if task_date else None
             self.notion_service.update_task_detail(
-                task.id, title, target_date, task.repeat_type, priority, project, task.notes
+                task.id, title, target_date, repeat_type, priority, project, task.notes, status
             )
         except Exception:
-            for item, old_title, old_project, old_priority, old_date in snapshots:
-                item.title, item.project, item.priority, item.date = old_title, old_project, old_priority, old_date
+            for item, old_title, old_project, old_priority, old_repeat_type, old_date, old_status, old_done in snapshots:
+                item.title, item.project, item.priority, item.repeat_type, item.date = old_title, old_project, old_priority, old_repeat_type, old_date
+                item.status, item.is_done = old_status, old_done
             self.app_state.current_focus_task = old_focus_title
             raise
         if old_focus_title == snapshots[0][1]:
@@ -257,6 +262,7 @@ class TodoController:
             for cached in collection:
                 if cached.id == task_id:
                     cached.is_done = is_done
+                    cached.status = "完成" if is_done else "未开始"
 
     def _sync_task_date(self, task_id: str, task_date: str) -> None:
         for collection in (self.app_state.cached_tasks, self.app_state.displayed_tasks, self.app_state.goal_tasks):

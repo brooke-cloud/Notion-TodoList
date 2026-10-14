@@ -15,10 +15,10 @@ GlassPanel {
         spacing: 8
         Repeater {
             model: [
-                { key: "tasks", label: "任务", icon: "✓" },
-                { key: "goals", label: "大目标", icon: "◎" },
-                { key: "analytics", label: "统计分析", icon: "▥" },
-                { key: "settings", label: "设置", icon: "⚙" }
+                { key: "tasks", label: "任务" },
+                { key: "goals", label: "大目标" },
+                { key: "analytics", label: "统计分析" },
+                { key: "settings", label: "设置" }
             ]
             Item {
                 required property var modelData
@@ -34,8 +34,8 @@ GlassPanel {
                     color: modelData.key === root.currentSection ? Theme.accent : "transparent"
                 }
                 Row {
-                    anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: 20; spacing: 14
-                    Text { text: modelData.icon; color: modelData.key === root.currentSection ? Theme.text : Theme.muted; font.pixelSize: 20 }
+                    anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: 20; spacing: 12
+                    NavigationIcon { kind: modelData.key; iconColor: modelData.key === root.currentSection ? Theme.text : Theme.muted }
                     Text { text: modelData.label; color: modelData.key === root.currentSection ? Theme.text : Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontBody }
                 }
                 HoverHandler { id: navHover }

@@ -18,6 +18,4 @@ class GoalProgress:
 
     @property
     def percent(self) -> int:
-        if self.goal.status == "Completed":
-            return 100
         return round(self.completed_tasks / self.total_tasks * 100) if self.total_tasks else 0

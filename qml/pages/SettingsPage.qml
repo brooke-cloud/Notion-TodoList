@@ -17,13 +17,15 @@ GlassPanel {
                 Column { anchors.fill: parent; anchors.margins: 18; spacing: 8
                     Text { text: "\u901a\u7528\u8bbe\u7f6e"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSection; font.bold: true }
                     SettingsRow { width: parent.width; label: "\u9ed8\u8ba4\u542f\u52a8\u9875\u9762"; GlassComboBox { anchors.fill: parent; model: ["\u4efb\u52a1","\u5927\u76ee\u6807","\u7edf\u8ba1\u5206\u6790"]; currentIndex: Math.max(0,model.indexOf(root.value("startup_page","\u4efb\u52a1"))); onActivated: appBridge.updateSetting("startup_page",currentText) } }
-                    SettingsRow { width: parent.width; label: "\u9ed8\u8ba4\u4efb\u52a1\u89c6\u56fe"; GlassComboBox { anchors.fill: parent; model: ["\u4eca\u5929","\u660e\u5929","\u5168\u90e8"]; currentIndex: Math.max(0,model.indexOf(root.value("default_date_view","\u4eca\u5929"))); onActivated: appBridge.updateSetting("default_date_view",currentText) } }
+                    SettingsRow { width: parent.width; label: "\u9ed8\u8ba4\u4efb\u52a1\u72b6\u6001"; GlassComboBox { anchors.fill: parent; model: ["\u672a\u5f00\u59cb","\u8fdb\u884c\u4e2d","\u5df2\u5b8c\u6210","\u5168\u90e8"]; currentIndex: Math.max(0,model.indexOf(root.value("default_task_status_filter","\u5168\u90e8"))); onActivated: appBridge.updateSetting("default_task_status_filter",currentText) } }
                 }
             }
-            GlassPanel { width: parent.width; height: 104
+            GlassPanel { width: parent.width; height: 188
                 Column { anchors.fill: parent; anchors.margins: 18; spacing: 8
                     Text { text: "\u4efb\u52a1\u8bbe\u7f6e"; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSection; font.bold: true }
                     SettingsRow { width: parent.width; label: "\u5b8c\u6210\u4efb\u52a1\u81ea\u52a8\u6c89\u5e95"; GlassSwitch { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; checked: root.value("completed_tasks_to_bottom",true); onToggled: appBridge.updateSetting("completed_tasks_to_bottom",checked) } }
+                    SettingsRow { width: parent.width; label: "\u6bcf\u65e5\u81ea\u52a8\u987a\u5ef6"; GlassSwitch { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; checked: root.value("daily_auto_postpone",true); onToggled: appBridge.updateSetting("daily_auto_postpone",checked) } }
+                    SettingsRow { width: parent.width; label: "\u6b21\u65e5\u81ea\u52a8\u663e\u793a\u65e5\u62a5"; GlassSwitch { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; checked: root.value("daily_report_auto_show",true); onToggled: appBridge.updateSetting("daily_report_auto_show",checked) } }
                 }
             }
             GlassPanel { width: parent.width; height: 146

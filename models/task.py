@@ -10,6 +10,7 @@ class Task:
     notes: str = ""
     date: str = ""
     repeat_type: str = "单次"
+    status: str = "未开始"
     is_done: bool = False
     goal_id: str | None = None
     goal_title: str | None = None

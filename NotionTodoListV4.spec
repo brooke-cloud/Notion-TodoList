@@ -1,12 +1,30 @@
 # -*- mode: python ; coding: utf-8 -*-
-datas = [("qml", "qml"), ("design/bg.jpg", "design"), ("assets/ui/app.ico", "assets/ui")]
+from PyInstaller.utils.hooks import collect_data_files
+
+
+datas = [
+    ("qml", "qml"),
+    ("design/bg.jpg", "design"),
+    ("assets/ui/app.ico", "assets/ui"),
+] + collect_data_files("certifi")
+
+hiddenimports = [
+    "certifi",
+    "certifi.core",
+    "requests",
+    "requests.api",
+    "requests.sessions",
+    "urllib3",
+    "idna",
+    "charset_normalizer",
+]
 
 a = Analysis(
     ["main.py"],
     pathex=["."],
     binaries=[],
     datas=datas,
-    hiddenimports=[],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -17,6 +35,15 @@ a = Analysis(
     noarchive=False,
     optimize=1,
 )
+
+# Qt 6 on Windows resolves the operating-system ICU.  A developer shell may
+# put unrelated tools (for example Poppler) on PATH; PyInstaller can otherwise
+# mistake those tools' versioned ICU binaries for application dependencies.
+_foreign_icu_names = {"icuuc.dll", "icudt78.dll"}
+a.binaries = [
+    entry for entry in a.binaries
+    if entry[0].lower() not in _foreign_icu_names
+]
 pyz = PYZ(a.pure)
 
 exe = EXE(

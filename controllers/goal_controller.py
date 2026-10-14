@@ -44,6 +44,14 @@ class GoalController:
     def progress_list(self, tasks: list[Task], goals: list[Goal] | None = None) -> list[GoalProgress]:
         return [self.progress_for(goal, tasks) for goal in (goals or self.app_state.goals)]
 
+    @staticmethod
+    def automatic_status(total_tasks: int, completed_tasks: int) -> str:
+        if total_tasks <= 0:
+            return "Not Started"
+        if completed_tasks >= total_tasks:
+            return "Completed"
+        return "In Progress"
+
     def tasks_for_goal(self, goal_id: str, tasks: list[Task]) -> list[Task]:
         return [task for task in tasks if task.goal_id == goal_id]
 

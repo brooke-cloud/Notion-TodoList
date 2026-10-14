@@ -21,14 +21,10 @@ Item {
                     GlassInput { id: quickAdd; width: parent.width - 104; height: parent.height; leadingIcon: "+"; placeholderText: "\u6dfb\u52a0\u4e00\u4e2a\u4efb\u52a1\u2026"; onAccepted: { appBridge.createTask(text); text = "" } }
                     GlassButton { width: 94; height: parent.height; text: "\u6dfb\u52a0"; primary: true; onClicked: { appBridge.createTask(quickAdd.text); quickAdd.text = "" } }
                 }
-                Row { width: parent.width; height: 44; spacing: 10
-                    GlassInput { width: parent.width - 378; height: parent.height; leadingIcon: "\u2315"; placeholderText: "\u641c\u7d22\u4efb\u52a1\u2026"; onTextChanged: appBridge.searchTasks(text) }
-                    GlassButton { width: 150; height: parent.height; text: "\u5168\u90e8\u5206\u7c7b" }
-                    GlassButton { width: 174; height: parent.height; text: "\u5168\u90e8\u5927\u76ee\u6807" }
-                    GlassButton { width: 44; height: parent.height; text: "\u21bb" }
-                }
-                Item { width: parent.width; height: parent.height - 226
+                Item { width: parent.width; height: parent.height - 170
                     ListView { id: taskList; anchors.fill: parent; visible: appBridge.taskLoadState === "idle" || appBridge.taskLoadState === "refreshing"; model: root.taskModel; spacing: 9; clip: true; boundsBehavior: Flickable.StopAtBounds; ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                        move: Transition { NumberAnimation { properties: "y"; duration: 170; easing.type: Easing.InOutQuad } }
+                        displaced: Transition { NumberAnimation { properties: "y"; duration: 170; easing.type: Easing.InOutQuad } }
                         delegate: TaskCard { width: taskList.width - 8; property string taskId: model.id; taskTitle: model.title; category: model.category; priority: model.priority; taskDate: model.date; goal: model.goalTitle; completed: model.isDone; onToggled: appBridge.toggleTaskDone(taskId); onEditRequested: appBridge.editTask(taskId); onPostponeRequested: appBridge.postponeTask(taskId); onFocusRequested: appBridge.focusTask(taskId) }
                     }
                     Text { anchors.centerIn: parent; visible: appBridge.taskLoadState === "idle" && taskList.count === 0; text: appBridge.taskViewTitle + "\u8fd8\u6ca1\u6709\u4efb\u52a1"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSection }
@@ -66,8 +62,8 @@ Item {
                             width: parent.width
                             height: 22
                             spacing: 10
-                            Rectangle { width: 7; height: 7; radius: 4; color: [Theme.accent,"#8A6CFF",Theme.warning,Theme.success][index % 4]; anchors.verticalCenter: parent.verticalCenter }
-                            Text { width: parent.width - 44; text: modelData.name; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontBody; elide: Text.ElideRight }
+                            Rectangle { width: 7; height: 7; radius: 4; color: Theme.categoryColor(modelData.name); anchors.verticalCenter: parent.verticalCenter }
+                            Text { width: parent.width - 44; text: modelData.name; color: Theme.categoryColor(modelData.name); font.family: Theme.fontFamily; font.pixelSize: Theme.fontBody; elide: Text.ElideRight }
                             Text { text: modelData.count; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontMeta }
                         }
                     }

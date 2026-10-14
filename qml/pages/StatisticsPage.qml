@@ -50,10 +50,10 @@ GlassPanel {
                         Repeater { model:root.data.categories||[]
                             Column { required property var modelData; width:parent.width; spacing:3
                                 Row { width:parent.width
-                                    Text{width:parent.width-45;text:modelData.name;color:Theme.muted;font.family:Theme.fontFamily;font.pixelSize:Theme.fontMeta}
+                                    Text{width:parent.width-45;text:modelData.name;color:Theme.categoryColor(modelData.name);font.family:Theme.fontFamily;font.pixelSize:Theme.fontMeta}
                                     Text{text:modelData.count;color:Theme.text;font.family:Theme.fontFamily;font.pixelSize:Theme.fontMeta}
                                 }
-                                Rectangle { width:parent.width; height:8; radius:4; color:Theme.control; Rectangle{width:parent.width*Math.max(.02,modelData.count/Math.max(1,root.data.total||1));height:parent.height;radius:4;color:Theme.accent} }
+                                Rectangle { width:parent.width; height:8; radius:4; color:Theme.control; Rectangle{width:parent.width*Math.max(.02,modelData.count/Math.max(1,root.data.total||1));height:parent.height;radius:4;color:Theme.categoryColor(modelData.name)} }
                             }
                         }
                     }
@@ -85,6 +85,19 @@ GlassPanel {
                             Text{text:"\u5df2\u5b8c\u6210  "+(root.data.completed||0);color:Theme.success;font.family:Theme.fontFamily}
                             Text{text:"\u5f85\u5b8c\u6210  "+(root.data.pending||0);color:Theme.muted;font.family:Theme.fontFamily}
                             Text{text:"\u672c\u5468\u5171\u8bb0\u5f55 "+(root.data.total||0)+" \u9879\u4efb\u52a1";color:Theme.dim;font.family:Theme.fontFamily;font.pixelSize:Theme.fontMeta}
+                        }
+                    }
+                }
+            }
+            GlassPanel { width:parent.width; height:Math.max(110,reportColumn.height+36)
+                Column { id:reportColumn; anchors{left:parent.left;right:parent.right;top:parent.top;margins:18} spacing:10
+                    Text{text:"\u5386\u53f2\u6bcf\u65e5\u5de5\u4f5c\u65e5\u62a5";color:Theme.text;font.family:Theme.fontFamily;font.pixelSize:Theme.fontSection;font.bold:true}
+                    Text{visible:!appBridge.reportHistory.length;text:"\u6682\u65e0\u65e5\u62a5";color:Theme.dim;font.family:Theme.fontFamily}
+                    Repeater{model:appBridge.reportHistory
+                        Row{required property var modelData;width:parent.width;height:36;spacing:12
+                            Text{width:140;text:modelData.date;color:Theme.text;font.family:Theme.fontFamily;anchors.verticalCenter:parent.verticalCenter}
+                            Text{width:260;text:"\u5b8c\u6210 "+modelData.completed+" / "+modelData.total+"  ·  "+modelData.completion_rate+"%";color:Theme.muted;font.family:Theme.fontFamily;anchors.verticalCenter:parent.verticalCenter}
+                            GlassButton{width:110;height:34;text:"\u67e5\u770b\u8be6\u60c5";onClicked:appBridge.showDailyReport(modelData.date)}
                         }
                     }
                 }

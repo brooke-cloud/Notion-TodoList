@@ -113,6 +113,7 @@ class NotionService:
         self.priority_supported = False
         self.project_supported = False
         self.notes_supported = False
+        self.task_status_options = []
         self.goal_relation_available = False
         self.goals_available = False
         self.goal_schema_error = ""
@@ -152,6 +153,18 @@ class NotionService:
             print("[Notion] Todo database: JSON_ERROR")
             raise RuntimeError("Todo 数据库响应解析失败") from exc
         print("[Notion] Todo database: OK")
+        status_prop = properties.get("状态")
+        if status_prop and status_prop.get("type") == "status":
+            groups = status_prop.get("status", {}).get("groups", [])
+            options = status_prop.get("status", {}).get("options", [])
+            self.task_status_options = [item.get("name", "") for item in options if item.get("name")]
+            if not self.task_status_options:
+                self.task_status_options = [
+                    option.get("name", "")
+                    for group in groups
+                    for option in group.get("options", [])
+                    if option.get("name")
+                ]
         priority_prop = properties.get("优先级")
         self.priority_supported = bool(priority_prop and priority_prop.get("type") == "select")
         # 正式字段为“分类”；仅对旧数据库的“项目”字段保留兼容读取。
@@ -307,6 +320,7 @@ class NotionService:
             notes=notes,
             date=task_date,
             repeat_type=repeat_type,
+            status=status_name,
             is_done=is_done,
             goal_id=goal_id,
         )
@@ -385,6 +399,13 @@ class NotionService:
 
     def fetch_all_tasks(self):
         results = self.query_all_pages({})
+        return self.sort_tasks([self.parse_task(item) for item in results])
+
+    def fetch_overdue_tasks(self, before_date):
+        """Return dated tasks older than ``before_date`` without changing schema."""
+        results = self.query_all_pages({
+            "filter": {"property": "日期", "date": {"before": before_date.isoformat()}}
+        })
         return self.sort_tasks([self.parse_task(item) for item in results])
 
     def create_task(self, title, target_date, repeat_type, priority, project, goal_id=None):
@@ -539,17 +560,18 @@ class NotionService:
         if resp.status_code != 200:
             raise Exception(f"更新任务大目标 Relation 失败：{resp.text}")
 
-    def update_task_status(self, page_id, is_done, target_date=None):
+    def update_task_status(self, page_id, is_done, target_date=None, status_name=None):
         # 更新任务完成状态
         url = f"https://api.notion.com/v1/pages/{page_id}"
-        properties = {"状态": {"status": {"name": "完成" if is_done else "未开始"}}}
+        status_name = status_name or ("完成" if is_done else "未开始")
+        properties = {"状态": {"status": {"name": status_name}}}
         if is_done and target_date is not None:
             properties["日期"] = {"date": {"start": target_date.isoformat()}}
         resp = self.request("PATCH", url, json={"properties": properties})
         if resp.status_code != 200:
             raise Exception(f"修改任务状态失败：{resp.text}")
 
-    def update_task_detail(self, page_id, title, target_date, repeat_type, priority, project, notes):
+    def update_task_detail(self, page_id, title, target_date, repeat_type, priority, project, notes, status_name=None):
         # 一次性保存标题、日期、重复、优先级、项目和备注
         url = f"https://api.notion.com/v1/pages/{page_id}"
         properties = {
@@ -557,6 +579,8 @@ class NotionService:
             "重复": {"select": {"name": repeat_type}},
             "日期": {"date": {"start": target_date.isoformat()}} if target_date else {"date": None},
         }
+        if status_name:
+            properties["状态"] = {"status": {"name": status_name}}
         if self.priority_supported:
             properties["优先级"] = {"select": {"name": priority}}
         if self.project_supported:
@@ -579,6 +603,10 @@ class NotionService:
         resp = self.request("PATCH", url, json=payload)
         if resp.status_code != 200:
             raise Exception(f"顺延任务失败：{resp.text}")
+
+    def reset_daily_task_to_date(self, page_id, new_date):
+        """Advance one recurring daily page without creating a duplicate page."""
+        return self.move_task_to_date(page_id, new_date)
 
     def delete_task(self, page_id):
         # Notion 删除页面实际使用 archived=True

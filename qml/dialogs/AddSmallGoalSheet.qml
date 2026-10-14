@@ -16,7 +16,8 @@ Popup {
     background: GlassPanel { surfaceColor: Theme.panelStrong }
 
     onOpened: { mode = 0; selectedIds = [] }
-    onClosed: appBridge.searchAllTasks("")
+    onClosed: appBridge.resetAvailableTasks()
+    onModeChanged: if (mode === 2) appBridge.searchAllTasks(search.text)
     function selected(taskId) { return selectedIds.indexOf(taskId) >= 0 }
     function toggle(taskId) {
         let values = selectedIds.slice()
@@ -48,7 +49,7 @@ Popup {
             Text { text: "任务标题"; color: Theme.muted; font.family: Theme.fontFamily }
             GlassInput { id: newTitle; width: parent.width }
             Text { text: "分类"; color: Theme.muted; font.family: Theme.fontFamily }
-            ComboBox { id: newCategory; width: parent.width; height: 42; model: ["未分类", "学习", "工作", "副业", "生活"] }
+            GlassComboBox { id: newCategory; width: parent.width; height: 42; colorizeCategories: true; model: ["未分类", "学习", "工作", "副业", "生活"] }
             Text { text: "优先级"; color: Theme.muted; font.family: Theme.fontFamily }
             GlassSegmentedControl { id: newPriority; width: parent.width; model: ["P0", "P1", "P2"]; currentIndex: 1 }
             Text { text: "日期"; color: Theme.muted; font.family: Theme.fontFamily }
@@ -75,10 +76,8 @@ Popup {
                 delegate: Rectangle {
                     required property var model
                     property string taskId: model.id
-                    property bool already: model.goalId === appBridge.selectedGoalId
                     width: availableList.width - 8; height: 58; radius: Theme.radiusControl
                     color: Theme.card; border.color: root.selected(taskId) ? Theme.borderActive : Theme.borderSoft
-                    opacity: already ? 0.55 : 1
                     Row {
                         anchors.fill: parent; anchors.margins: 12; spacing: 12
                         Rectangle {
@@ -91,12 +90,11 @@ Popup {
                             Text { text: model.title; color: Theme.text; font.family: Theme.fontFamily; font.bold: true; elide: Text.ElideRight; width: parent.width }
                             Text {
                                 text: model.category + " · " + model.priority + " · " + model.date
-                                      + (already ? " · 已关联" : model.goalTitle ? " · 当前属于：" + model.goalTitle : "")
                                 color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontMeta
                             }
                         }
                     }
-                    TapHandler { enabled: !parent.already; onTapped: root.toggle(parent.taskId) }
+                    TapHandler { onTapped: root.toggle(parent.taskId) }
                 }
             }
             Row {

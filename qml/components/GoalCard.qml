@@ -17,8 +17,8 @@ GlassPanel {
             Text{text:root.totalTasks+" 个小目标  ·  "+root.completedTasks+" 已完成";color:Theme.muted;font.family:Theme.fontFamily;font.pixelSize:Theme.fontMeta}
         }
         Column { width:130;anchors.verticalCenter:parent.verticalCenter;spacing:7
-            Rectangle{width:88;height:26;radius:9;color:root.statusLabel==="已完成"?"#6842E2B3":Theme.accentSoft
-                Text{anchors.centerIn:parent;text:root.statusLabel;color:Theme.text;font.family:Theme.fontFamily;font.pixelSize:Theme.fontMeta}}
+            Rectangle{width:88;height:26;radius:9;color:root.statusLabel==="已完成"?Qt.rgba(Theme.success.r,Theme.success.g,Theme.success.b,.18):Theme.accentSoft;border.width:1;border.color:root.statusLabel==="已完成"?Qt.rgba(Theme.success.r,Theme.success.g,Theme.success.b,.42):Theme.borderSoft
+                Text{anchors.centerIn:parent;text:root.statusLabel;color:root.statusLabel==="已完成"?Theme.success:Theme.text;font.family:Theme.fontFamily;font.pixelSize:Theme.fontMeta;font.bold:root.statusLabel==="已完成"}}
             Text{text:root.updated?"更新 "+root.updated.slice(0,10):"";color:Theme.dim;font.family:Theme.fontFamily;font.pixelSize:Theme.fontMeta}
         }
     }

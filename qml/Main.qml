@@ -58,16 +58,18 @@ ApplicationWindow {
                 Text { text: "V4 Preview"; color: Theme.dim; font.family: Theme.fontFamily; font.pixelSize: Theme.fontMeta; anchors.verticalCenter: parent.verticalCenter }
             }
             Row {
-                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; spacing: 2
                 Repeater {
                     model: ["—", "□", "×"]
                     Rectangle {
                         required property int index
                         required property string modelData
-                        width: 46; height: 42; color: titleHover.hovered ? (index === 2 ? "#A9E34F68" : "#55284967") : "transparent"
-                        Text { anchors.centerIn: parent; text: modelData; color: Theme.muted; font.pixelSize: index === 2 ? 19 : 14 }
+                        width: 44; height: 36; radius: 8
+                        color: titleTap.pressed ? (index === 2 ? "#C9F05262" : "#7A284967") : (titleHover.hovered ? (index === 2 ? "#8FE34F68" : "#55284967") : "transparent")
+                        Text { anchors.centerIn: parent; text: modelData; color: Theme.muted; font.pixelSize: index === 2 ? 16 : 15; font.family: Theme.fontFamily }
                         HoverHandler { id: titleHover }
                         TapHandler {
+                            id: titleTap
                             onTapped: {
                                 if (index === 0) window.showMinimized()
                                 else if (index === 1) window.visibility === Window.Maximized ? window.showNormal() : window.showMaximized()
@@ -119,6 +121,7 @@ ApplicationWindow {
     Component{id:settingsComponent;SettingsPage{}}
     TaskEditDialog{id:taskEdit;goalModel:goalListModel}
     GoalCreateDialog{id:goalCreate}
+    DailyReportDialog{id:dailyReport}
     Rectangle{id:toast;width:Math.min(520,toastText.implicitWidth+40);height:46;radius:12;color:"#E51B3048";border.color:toast.kind==="error"?Theme.danger:Theme.borderActive;visible:false;anchors.horizontalCenter:parent.horizontalCenter;anchors.bottom:parent.bottom;anchors.bottomMargin:24;property string kind:"info"
         Text{id:toastText;anchors.centerIn:parent;color:Theme.text;font.family:Theme.fontFamily}
         Timer{id:toastTimer;interval:3600;onTriggered:toast.visible=false}
@@ -126,5 +129,6 @@ ApplicationWindow {
     Connections{target:appBridge
         function onTaskEditRequested(data){taskEdit.taskData=data;taskEdit.open()}
         function onToastRequested(message,kind){toastText.text=message;toast.kind=kind;toast.visible=true;toastTimer.restart()}
+        function onDailyReportRequested(report){dailyReport.showReport(report)}
     }
 }

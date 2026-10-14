@@ -45,12 +45,17 @@ class GoalListModel(QAbstractListModel):
     def update(self,goal_id,**changes):
         item=self.item(goal_id)
         if not item:return False
+        old_row=self._items.index(item) if item in self._items else -1
         item.update(changes)
         if "status" in changes:item["statusLabel"]=self.LABELS.get(item["status"],item["status"])
-        if item in self._items:
-            row=self._items.index(item); roles=[r for r,n in self.ROLES.items() if n in changes or n=="statusLabel"]
-            self.dataChanged.emit(self.index(row),self.index(row),roles)
-        else:self.set_filters()
+        desired=self._filtered();new_row=desired.index(item) if item in desired else -1
+        if old_row>=0 and new_row>=0:
+            roles=[r for r,n in self.ROLES.items() if n in changes or n=="statusLabel"]
+            self.dataChanged.emit(self.index(old_row),self.index(old_row),roles)
+        elif old_row>=0:
+            self.beginRemoveRows(QModelIndex(),old_row,old_row);self._items.pop(old_row);self.endRemoveRows()
+        elif new_row>=0:
+            self.beginInsertRows(QModelIndex(),new_row,new_row);self._items.insert(new_row,item);self.endInsertRows()
         return True
     def remove(self,goal_id):
         item=self.item(goal_id)

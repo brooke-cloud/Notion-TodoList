@@ -4,6 +4,7 @@ import ".."
 
 ComboBox {
     id: root
+    property bool colorizeCategories: false
     implicitWidth: 180; implicitHeight: 38
     contentItem: Text { leftPadding: 12; rightPadding: 26; text: root.displayText; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontBody; verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight }
     indicator: Text { x: root.width - width - 12; anchors.verticalCenter: parent.verticalCenter; text: "\u25be"; color: Theme.muted; font.pixelSize: 15 }
@@ -11,7 +12,7 @@ ComboBox {
     delegate: ItemDelegate {
         required property var modelData
         width: root.width; height: 34
-        contentItem: Text { text: modelData; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontBody; verticalAlignment: Text.AlignVCenter }
+        contentItem: Text { text: modelData; color: root.colorizeCategories ? Theme.categoryColor(modelData) : Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontBody; verticalAlignment: Text.AlignVCenter }
         background: Rectangle { radius: 7; color: highlighted ? Theme.cardHover : "transparent" }
     }
     popup: Popup {

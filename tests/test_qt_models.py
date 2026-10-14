@@ -1,15 +1,19 @@
 import unittest
 from types import SimpleNamespace
-from PySide6.QtCore import QCoreApplication, QThreadPool
+from PySide6.QtCore import QCoreApplication, QEventLoop, QThreadPool, QTimer
 
 from models.goal import Goal, GoalProgress
 from models.task import Task
+from controllers.goal_controller import GoalController
 from qt_app.goal_list_model import GoalListModel
 from qt_app.task_list_model import TaskListModel
 from qt_app.workers import Worker
 
 
 class TaskListModelTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app=QCoreApplication.instance() or QCoreApplication([])
     def setUp(self):
         self.pending = Task("1", "pending", "中", "工作", date="2026-10-06")
         self.done = Task("2", "done", "低", "学习", date="2026-10-06", is_done=True)
@@ -43,13 +47,25 @@ class TaskListModelTests(unittest.TestCase):
         self.model.update("1",goalId="")
         self.assertEqual(self.model.rowCount(),0); self.assertEqual(len(removed),1)
 
+    def test_completion_paints_before_deferred_bottom_sort(self):
+        self.model.update_completion("1",True,"完成",80)
+        self.assertEqual(self.model.idAt(0),"1")
+        role=next(role for role,name in self.model.ROLES.items() if name=="isDone")
+        self.assertTrue(self.model.data(self.model.index(0),role))
+        loop=QEventLoop();QTimer.singleShot(130,loop.quit);loop.exec()
+        self.assertEqual(self.model.idAt(self.model.rowCount()-1),"1")
+
 
 class GoalListModelTests(unittest.TestCase):
-    def test_completed_goal_is_always_one_hundred(self):
+    def test_automatic_goal_status_rules(self):
+        self.assertEqual(GoalController.automatic_status(0,0),"Not Started")
+        self.assertEqual(GoalController.automatic_status(3,2),"In Progress")
+        self.assertEqual(GoalController.automatic_status(3,3),"Completed")
+    def test_goal_progress_comes_from_related_task_counts(self):
         goal = Goal("g", "goal", "Completed")
         model = GoalListModel(); model.set_goals([goal], [GoalProgress(goal, 3, 1)])
         role = next(role for role, name in model.ROLES.items() if name == "progress")
-        self.assertEqual(model.data(model.index(0), role), 100)
+        self.assertEqual(model.data(model.index(0), role), 33)
 
     def test_insert_goal_is_incremental(self):
         model=GoalListModel(); model.set_goals([],[]); events=[]
@@ -57,6 +73,22 @@ class GoalListModelTests(unittest.TestCase):
         goal=Goal("g2","new","In Progress")
         self.assertTrue(model.insert_goal(goal,GoalProgress(goal,0,0)))
         self.assertEqual(model.rowCount(),1); self.assertEqual(len(events),1)
+
+    def test_status_filters_use_real_goal_status_immediately(self):
+        goals=[Goal("todo","todo","Not Started"),Goal("doing","doing","In Progress"),Goal("done","done","Completed")]
+        model=GoalListModel();model.set_goals(goals,[GoalProgress(goal,0,0) for goal in goals])
+        for label,expected in (("未开始","todo"),("进行中","doing"),("已完成","done")):
+            model.set_filters(status=label)
+            self.assertEqual(model.rowCount(),1);self.assertEqual(model.idAt(0),expected)
+        model.set_filters(status="全部");self.assertEqual(model.rowCount(),3)
+
+    def test_completed_status_moves_between_goal_filters_and_keeps_progress(self):
+        goal=Goal("g","goal","In Progress");model=GoalListModel();model.set_goals([goal],[GoalProgress(goal,2,2)])
+        model.set_filters(status="进行中");self.assertEqual(model.rowCount(),1)
+        model.update(goal.id,status="Completed",progress=100)
+        self.assertEqual(model.rowCount(),0)
+        model.set_filters(status="已完成");self.assertEqual(model.rowCount(),1)
+        item=model.item(goal.id);self.assertEqual(item["statusLabel"],"已完成");self.assertEqual(item["progress"],100)
 
 
 class WorkerTests(unittest.TestCase):

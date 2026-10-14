@@ -27,6 +27,24 @@ QtObject {
     readonly property color danger: "#F06B82"
     readonly property color shadow: "#B5000711"
     readonly property color tag: "#9B183B60"
+    readonly property color categoryWork: "#3C91FF"
+    readonly property color categoryStudy: "#8A6CFF"
+    readonly property color categorySide: "#E5B85C"
+    readonly property color categoryLife: "#42E2B3"
+    readonly property color categoryOther: "#7690AA"
+
+    function categoryColor(name) {
+        return name === "工作" ? categoryWork : name === "学习" ? categoryStudy
+             : name === "副业" ? categorySide : name === "生活" ? categoryLife : categoryOther
+    }
+    function categoryBackground(name) {
+        let value = categoryColor(name)
+        return Qt.rgba(value.r, value.g, value.b, 0.18)
+    }
+    function categoryBorder(name) {
+        let value = categoryColor(name)
+        return Qt.rgba(value.r, value.g, value.b, 0.38)
+    }
 
     readonly property int radiusSmall: 9
     readonly property int radiusControl: 12

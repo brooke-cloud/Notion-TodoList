@@ -21,7 +21,11 @@ GlassPanel {
                     Keys.onEscapePressed:visible=false
                 }
                 Row{spacing:12
-                    GlassButton{width:105;height:32;text:(appBridge.selectedGoal.statusLabel||"未开始")+"  ▾";onClicked:statusPopup.open()}
+                    GlassButton{
+                        width:118;height:32
+                        text:(appBridge.selectedGoal.statusLabel||"未开始")+"  ▾"
+                        onClicked:statusPopup.open()
+                    }
                     Text{text:(appBridge.selectedGoal.progress||0)+"%";color:Theme.accent;font.family:Theme.fontFamily;font.pixelSize:Theme.fontBody;font.bold:true;anchors.verticalCenter:parent.verticalCenter}
                     Text{text:(appBridge.selectedGoal.completedTasks||0)+" / "+(appBridge.selectedGoal.totalTasks||0)+" 个小目标";color:Theme.muted;font.family:Theme.fontFamily;font.pixelSize:Theme.fontBody;anchors.verticalCenter:parent.verticalCenter}
                 }
@@ -30,6 +34,8 @@ GlassPanel {
         }
         GlassSegmentedControl{width:parent.width;model:["小目标任务","统计分析","详细信息"];onSelected:(index,value)=>root.tabIndex=index}
         ListView{visible:root.tabIndex===0;width:parent.width;height:parent.height-190;model:root.taskModel;spacing:9;clip:true
+            move:Transition{NumberAnimation{properties:"y";duration:170;easing.type:Easing.InOutQuad}}
+            displaced:Transition{NumberAnimation{properties:"y";duration:170;easing.type:Easing.InOutQuad}}
             delegate:TaskCard{property string taskId:model.id;width:ListView.view.width-8;taskTitle:model.title;category:model.category;priority:model.priority;taskDate:model.date;goal:model.goalTitle;completed:model.isDone;inGoalDetail:true;onToggled:appBridge.toggleTaskDone(taskId);onEditRequested:appBridge.editTask(taskId);onPostponeRequested:appBridge.postponeTask(taskId);onFocusRequested:appBridge.focusTask(taskId);onDeleteRequested:appBridge.deleteTask(taskId);onRemoveGoalRequested:appBridge.removeTaskFromGoal(taskId)}}
         Column{visible:root.tabIndex===1;spacing:14
             Text{text:"总小目标  "+(appBridge.selectedGoal.totalTasks||0)+"    已完成  "+(appBridge.selectedGoal.completedTasks||0)+"    完成率  "+(appBridge.selectedGoal.progress||0)+"%";color:Theme.text;font.family:Theme.fontFamily;font.pixelSize:Theme.fontSection}
@@ -42,9 +48,33 @@ GlassPanel {
             Text{text:"最后更新："+(appBridge.selectedGoal.lastUpdated||"");color:Theme.dim;font.family:Theme.fontFamily}
         }
     }
-    Popup{id:statusPopup;width:150;height:126;modal:false;focus:true;x:20;y:145;background:GlassPanel{surfaceColor:Theme.panelStrong}
-        Column{anchors.fill:parent;anchors.margins:6;Repeater{model:[{label:"未开始",value:"Not Started"},{label:"进行中",value:"In Progress"},{label:"已完成",value:"Completed"}]
-            GlassButton{required property var modelData;width:parent.width;height:36;text:modelData.label;onClicked:{appBridge.setGoalStatus(appBridge.selectedGoalId,modelData.value);statusPopup.close()}}}}
+    Popup{
+        id:statusPopup
+        width:170;height:132
+        x:20;y:142
+        modal:false;focus:true
+        closePolicy:Popup.CloseOnEscape|Popup.CloseOnPressOutside
+        background:GlassPanel{surfaceColor:Theme.panelStrong}
+        contentItem:Column{
+            spacing:4
+            Repeater{
+                model:[
+                    {label:"未开始",value:"Not Started"},
+                    {label:"进行中",value:"In Progress"},
+                    {label:"已完成",value:"Completed"}
+                ]
+                GlassButton{
+                    required property var modelData
+                    width:158;height:36
+                    text:modelData.label+(appBridge.selectedGoal.status===modelData.value?"  ✓":"")
+                    primary:appBridge.selectedGoal.status===modelData.value
+                    onClicked:{
+                        appBridge.setGoalStatus(appBridge.selectedGoalId,modelData.value)
+                        statusPopup.close()
+                    }
+                }
+            }
+        }
     }
     AddSmallGoalSheet{id:addSheet;allTaskModel:allTaskListModel}
 }

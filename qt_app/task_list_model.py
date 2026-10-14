@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, Slot
+from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, QTimer, Slot
 
 
 class TaskListModel(QAbstractListModel):
-    FIELDS = ("id", "title", "category", "priority", "date", "repeatType", "isDone", "goalId", "goalTitle")
+    FIELDS = ("id", "title", "category", "priority", "date", "repeatType", "status", "isDone", "goalId", "goalTitle")
     ROLES = {Qt.UserRole + index + 1: name for index, name in enumerate(FIELDS)}
 
     def __init__(self, parent=None):
@@ -14,7 +14,9 @@ class TaskListModel(QAbstractListModel):
         self._query = ""
         self._category = "全部分类"
         self._goal_id = ""
+        self._status = "全部"
         self.completed_to_bottom = True
+        self._completion_versions = {}
 
     def roleNames(self):
         return {role: name.encode() for role, name in self.ROLES.items()}
@@ -32,6 +34,7 @@ class TaskListModel(QAbstractListModel):
         return {"id": task.id, "title": task.title, "category": task.project or "未分类",
                 "priority": {"高": "P0", "中": "P1", "低": "P2"}.get(task.priority, task.priority),
                 "date": (task.date or "")[:10], "repeatType": task.repeat_type,
+                "status": "完成" if task.is_done else (task.status or "未开始"),
                 "isDone": bool(task.is_done), "goalId": task.goal_id or "", "goalTitle": task.goal_title or "",
                 "_object": task}
 
@@ -110,16 +113,21 @@ class TaskListModel(QAbstractListModel):
                 continue
             if self._goal_id not in ("", "__unbound__") and item["goalId"] != self._goal_id:
                 continue
+            if self._status != "全部":
+                expected = "完成" if self._status == "已完成" else self._status
+                if item["status"] != expected:
+                    continue
             result.append(item)
         if not self.completed_to_bottom:
             return result
         ordered = sorted(enumerate(result), key=lambda pair: (pair[1]["isDone"], pair[0]))
         return [pair[1] for pair in ordered]
 
-    def set_filters(self, query=None, category=None, goal_id=None):
+    def set_filters(self, query=None, category=None, goal_id=None, status=None):
         if query is not None: self._query = query.strip().lower()
         if category is not None: self._category = category
         if goal_id is not None: self._goal_id = goal_id
+        if status is not None: self._status = status
         self.beginResetModel(); self._items = self._filtered(); self.endResetModel()
 
     def item(self, task_id):
@@ -152,6 +160,40 @@ class TaskListModel(QAbstractListModel):
             self._items.insert(new_row, item)
             self.endInsertRows()
         return True
+
+    def update_completion(self, task_id, is_done, status, delay_ms=180):
+        """Paint the checkbox state first, then apply completed-to-bottom ordering."""
+        item = self.item(task_id)
+        if not item:
+            return False
+        old_row = self._items.index(item) if item in self._items else -1
+        item.update(isDone=bool(is_done), status=status)
+        if old_row >= 0:
+            roles = [role for role, name in self.ROLES.items() if name in ("isDone", "status")]
+            self.dataChanged.emit(self.index(old_row), self.index(old_row), roles)
+        version = self._completion_versions.get(task_id, 0) + 1
+        self._completion_versions[task_id] = version
+        QTimer.singleShot(delay_ms, lambda: self._finish_completion_sort(task_id, version))
+        return True
+
+    def _finish_completion_sort(self, task_id, version):
+        if self._completion_versions.get(task_id) != version:
+            return
+        self._completion_versions.pop(task_id, None)
+        item = self.item(task_id)
+        if not item:
+            return
+        old_row = self._items.index(item) if item in self._items else -1
+        desired = self._filtered()
+        new_row = desired.index(item) if item in desired else -1
+        if old_row >= 0 and new_row >= 0 and old_row != new_row:
+            destination = new_row + (1 if new_row > old_row else 0)
+            self.beginMoveRows(QModelIndex(), old_row, old_row, QModelIndex(), destination)
+            self._items.pop(old_row); self._items.insert(new_row, item); self.endMoveRows()
+        elif old_row >= 0 and new_row < 0:
+            self.beginRemoveRows(QModelIndex(), old_row, old_row); self._items.pop(old_row); self.endRemoveRows()
+        elif old_row < 0 and new_row >= 0:
+            self.beginInsertRows(QModelIndex(), new_row, new_row); self._items.insert(new_row, item); self.endInsertRows()
 
     def remove(self, task_id):
         item = self.item(task_id)
