@@ -121,6 +121,18 @@ class DateCacheTests(unittest.TestCase):
         self.bridge.setFocusMode(self.bridge.settings["default_break_minutes"])
         self.assertEqual(self.bridge.focusTime,"10:00")
 
+    def test_manual_sync_reuses_background_refresh_and_ignores_repeat_clicks(self):
+        calls=[]
+        self.bridge._request_current_tasks=lambda:calls.append("tasks")
+        self.bridge._refresh_reference_data=lambda:calls.append("references")
+        self.bridge._set_task_load_state("idle")
+        self.bridge.manualSync()
+        self.assertEqual(calls,["tasks","references"])
+        self.assertEqual(self.bridge.syncText,"正在同步…")
+        self.bridge._set_task_load_state("refreshing")
+        self.bridge.manualSync()
+        self.assertEqual(calls,["tasks","references"])
+
     def test_uncached_switch_returns_under_50ms_during_two_second_network_delay(self):
         tomorrow = date.today() + timedelta(days=1); self.service.delays[tomorrow] = 1.2
         started = time.perf_counter(); self.bridge.setDateView("明天"); elapsed = (time.perf_counter() - started) * 1000

@@ -14,3 +14,4 @@ class Task:
     is_done: bool = False
     goal_id: str | None = None
     goal_title: str | None = None
+    created_date: str = ""

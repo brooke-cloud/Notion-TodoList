@@ -9,12 +9,14 @@ Item {
         GlassPanel { width: parent.width - 314; height: parent.height; surfaceColor: "#B20A2037"
             Column { anchors.fill: parent; anchors.margins: 20; spacing: 12
                 Row { width: parent.width; height: 58
-                    Column { spacing: 3
+                    Column { width: parent.width - 224; spacing: 3
                         Text { text: appBridge.taskViewTitle; color: Theme.text; font.family: Theme.fontFamily; font.pixelSize: Theme.fontPage; font.bold: true }
                         Text { text: appBridge.pendingCount + " \u4e2a\u5f85\u5b8c\u6210\u4efb\u52a1 \u00b7 \u5df2\u5b8c\u6210 " + appBridge.completedCount + " \u4e2a"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontBody }
                     }
-                    Item { width: parent.width - 300; height: 1 }
-                    Text { text: appBridge.taskLoadState === "refreshing" ? "\u540c\u6b65\u4e2d\u2026" : appBridge.taskLoadState === "loading" ? "\u52a0\u8f7d\u4e2d\u2026" : appBridge.taskLoadState === "error" ? "\u52a0\u8f7d\u5931\u8d25" : "\u5df2\u540c\u6b65"; color: appBridge.taskLoadState === "error" ? Theme.danger : appBridge.taskLoadState === "idle" ? Theme.success : Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontMeta; anchors.verticalCenter: parent.verticalCenter }
+                    Row { width: 224; height: parent.height; spacing: 10
+                        Text { width: 112; text: appBridge.taskLoadState === "refreshing" ? "\u540c\u6b65\u4e2d\u2026" : appBridge.taskLoadState === "loading" ? "\u52a0\u8f7d\u4e2d\u2026" : appBridge.taskLoadState === "error" ? "\u52a0\u8f7d\u5931\u8d25" : "\u5df2\u540c\u6b65"; color: appBridge.taskLoadState === "error" ? Theme.danger : appBridge.taskLoadState === "idle" ? Theme.success : Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontMeta; horizontalAlignment: Text.AlignRight; anchors.verticalCenter: parent.verticalCenter }
+                        GlassButton { width: 102; height: 36; anchors.verticalCenter: parent.verticalCenter; iconText: "\u21bb"; text: appBridge.taskLoadState === "loading" || appBridge.taskLoadState === "refreshing" ? "\u540c\u6b65\u4e2d" : "\u540c\u6b65"; enabled: appBridge.taskLoadState !== "loading" && appBridge.taskLoadState !== "refreshing"; opacity: enabled ? 1 : .55; onClicked: appBridge.manualSync() }
+                    }
                 }
                 GlassSegmentedControl { width: parent.width; model: ["\u4eca\u5929", "\u6628\u5929", "\u660e\u5929", "\u5168\u90e8"]; currentIndex: Math.max(0, model.indexOf(appBridge.dateView)); onSelected: (index, value) => appBridge.setDateView(value) }
                 Row { width: parent.width; height: 46; spacing: 10
@@ -25,7 +27,7 @@ Item {
                     ListView { id: taskList; anchors.fill: parent; visible: appBridge.taskLoadState === "idle" || appBridge.taskLoadState === "refreshing"; model: root.taskModel; spacing: 9; clip: true; boundsBehavior: Flickable.StopAtBounds; ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
                         move: Transition { NumberAnimation { properties: "y"; duration: 170; easing.type: Easing.InOutQuad } }
                         displaced: Transition { NumberAnimation { properties: "y"; duration: 170; easing.type: Easing.InOutQuad } }
-                        delegate: TaskCard { width: taskList.width - 8; property string taskId: model.id; taskTitle: model.title; category: model.category; priority: model.priority; taskDate: model.date; goal: model.goalTitle; completed: model.isDone; onToggled: appBridge.toggleTaskDone(taskId); onEditRequested: appBridge.editTask(taskId); onPostponeRequested: appBridge.postponeTask(taskId); onFocusRequested: appBridge.focusTask(taskId) }
+                        delegate: TaskCard { width: taskList.width - 8; property string taskId: model.id; taskTitle: model.title; category: model.category; priority: model.priority; taskDate: model.createdDate; goal: model.goalTitle; completed: model.isDone; onToggled: appBridge.toggleTaskDone(taskId); onEditRequested: appBridge.editTask(taskId); onPostponeRequested: appBridge.postponeTask(taskId); onFocusRequested: appBridge.focusTask(taskId) }
                     }
                     Text { anchors.centerIn: parent; visible: appBridge.taskLoadState === "idle" && taskList.count === 0; text: appBridge.taskViewTitle + "\u8fd8\u6ca1\u6709\u4efb\u52a1"; color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontSection }
                 }

@@ -2,7 +2,9 @@ import os
 import re
 import sys
 import threading
+from datetime import datetime
 from urllib.parse import unquote, urlparse
+from zoneinfo import ZoneInfo
 
 import requests
 from dotenv import load_dotenv
@@ -323,7 +325,18 @@ class NotionService:
             status=status_name,
             is_done=is_done,
             goal_id=goal_id,
+            created_date=self._created_date_shanghai(item.get("created_time", "")),
         )
+
+    @staticmethod
+    def _created_date_shanghai(value):
+        if not value:
+            return ""
+        try:
+            timestamp=datetime.fromisoformat(value.replace("Z","+00:00"))
+            return timestamp.astimezone(ZoneInfo("Asia/Shanghai")).date().isoformat()
+        except (TypeError,ValueError):
+            return str(value)[:10]
 
     def sort_tasks(self, tasks):
         # 未完成任务优先，再按优先级、项目和标题排序

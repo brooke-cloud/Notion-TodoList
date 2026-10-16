@@ -27,9 +27,16 @@ class TaskListModelTests(unittest.TestCase):
 
     def test_roles_and_filters_are_stable(self):
         self.assertIn(b"goalId", self.model.roleNames().values())
+        self.assertIn(b"createdDate", self.model.roleNames().values())
         self.model.set_filters(category="工作")
         self.assertEqual(self.model.rowCount(), 1)
         self.assertEqual(self.model.idAt(0), "1")
+
+    def test_card_date_uses_creation_date_without_changing_due_date(self):
+        task=Task("created","created",date="2026-10-16",created_date="2026-09-28")
+        model=TaskListModel();model.set_tasks([task]);item=model.item(task.id)
+        self.assertEqual(item["date"],"2026-10-16")
+        self.assertEqual(item["createdDate"],"2026-09-28")
 
     def test_insert_and_remove_use_incremental_model_updates(self):
         inserted = Task("3", "inserted", "高", "副业", date="2026-10-06")

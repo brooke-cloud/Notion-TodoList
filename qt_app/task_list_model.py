@@ -4,7 +4,7 @@ from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, QTimer, Slot
 
 
 class TaskListModel(QAbstractListModel):
-    FIELDS = ("id", "title", "category", "priority", "date", "repeatType", "status", "isDone", "goalId", "goalTitle")
+    FIELDS = ("id", "title", "category", "priority", "date", "createdDate", "repeatType", "status", "isDone", "goalId", "goalTitle")
     ROLES = {Qt.UserRole + index + 1: name for index, name in enumerate(FIELDS)}
 
     def __init__(self, parent=None):
@@ -33,7 +33,7 @@ class TaskListModel(QAbstractListModel):
     def from_task(task):
         return {"id": task.id, "title": task.title, "category": task.project or "未分类",
                 "priority": {"高": "P0", "中": "P1", "低": "P2"}.get(task.priority, task.priority),
-                "date": (task.date or "")[:10], "repeatType": task.repeat_type,
+                "date": (task.date or "")[:10], "createdDate": (task.created_date or "")[:10], "repeatType": task.repeat_type,
                 "status": "完成" if task.is_done else (task.status or "未开始"),
                 "isDone": bool(task.is_done), "goalId": task.goal_id or "", "goalTitle": task.goal_title or "",
                 "_object": task}

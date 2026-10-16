@@ -139,6 +139,16 @@ class AppBridge(QObject):
         self._request_current_tasks()
         self._refresh_reference_data()
 
+    @Slot()
+    def manualSync(self):
+        if not self.service:
+            self.toastRequested.emit("Notion 服务尚未就绪，请稍后再试","error")
+            return
+        if self._task_load_state in ("loading","refreshing"):
+            return
+        self._sync_text="正在同步…";self.syncChanged.emit()
+        self.loadAll()
+
     def _reload_report_history(self):
         self._report_history=self.report_store.history();self.reportHistoryChanged.emit()
 
@@ -168,7 +178,7 @@ class AppBridge(QObject):
 
     @staticmethod
     def _task_signature(tasks):
-        return [(task.id,task.title,task.project,task.priority,task.date,task.repeat_type,task.status,bool(task.is_done),task.goal_id,task.goal_title) for task in tasks]
+        return [(task.id,task.title,task.project,task.priority,task.date,task.created_date,task.repeat_type,task.status,bool(task.is_done),task.goal_id,task.goal_title) for task in tasks]
 
     def _set_task_loading(self,value):
         value=bool(value)
@@ -543,7 +553,7 @@ class AppBridge(QObject):
         if not goal_id or not title:return
         notion_priority={"P0":"高","P1":"中","P2":"低"}.get(priority,priority)
         goal_title=(self.goal_model.item(goal_id) or {}).get("title","")
-        pending_task=Task(f"pending:{uuid4().hex}",title,notion_priority,category,date=task_date,goal_id=goal_id,goal_title=goal_title)
+        pending_task=Task(f"pending:{uuid4().hex}",title,notion_priority,category,date=task_date,goal_id=goal_id,goal_title=goal_title,created_date=shanghai_now().date().isoformat())
         self.state.goal_tasks.append(pending_task);self._cache_new_task(pending_task);self.all_task_model.insert_task(pending_task);self.task_model.insert_task(pending_task)
         self._goal_progress_delta(goal_id,total_delta=1);self.summaryChanged.emit();self.refreshAnalytics()
         def create():
