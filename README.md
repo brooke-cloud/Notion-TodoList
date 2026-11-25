@@ -1,82 +1,55 @@
 # Notion TodoList V4
 
-Notion TodoList V4 是一个 Windows 桌面任务管理应用，使用 Python、PySide6 与 Qt Quick/QML 构建，并通过 Notion API 读写任务和目标数据。
+基于 Python、PySide6 和 Qt Quick/QML 的 Windows 桌面任务管理应用。任务与大目标通过 Notion API 同步；界面采用 Deep Navy Glass 风格。
 
-## 主要功能
+## 功能
 
-- 任务的创建、编辑、完成、删除与顺延；按日期、分类、目标和关键词查看。
-- 目标的创建、编辑、删除、关联任务和进度计算。
-- 25 分钟专注与 5 分钟休息计时，可选择当前专注任务。
-- 任务完成率、分类分布、完成趋势与目标进度统计。
-- 可配置启动页、默认视图、专注时长、自动同步和界面显示选项。
-
-## 技术栈
-
-- Python 3、PySide6、Qt Quick / QML
-- `python-dotenv`、`requests`（Notion 配置与 HTTP 请求）
-- PyInstaller（Windows onedir 发布包）
+- 创建、编辑、完成、删除和顺延任务；按今天、昨天、明天或全部日期查看。
+- 管理大目标、关联小目标任务，并查看完成进度与状态。
+- 设置专注和休息时长，使用专注计时器。
+- 查看任务完成情况、分类分布、目标进度和历史工作日报。
+- 按北京时间生成日报并处理逾期未完成任务；可在设置中关闭每日自动顺延和日报自动弹出。
+- 使用本地缓存、后台 Worker 和 Qt Bridge 更新界面与 Notion 数据。
 
 ## 项目结构
 
-```text
-├── main.py                    # 应用入口
-├── app/                       # 应用状态
-├── controllers/               # 任务、目标和统计控制器
-├── models/                    # 任务、目标数据模型
-├── services/                  # Notion API 服务
-├── qt_app/                    # Qt Bridge、列表模型和后台任务
-├── qml/                       # 页面、组件和对话框
-├── design/、assets/           # 设计资源和应用图标
-├── tests/                     # 自动化测试
-├── requirements.txt           # Python 依赖
-├── NotionTodoListV4.spec      # PyInstaller 配置
-└── build_v4_release.ps1       # Windows 发布包构建脚本
-```
+| 路径 | 用途 |
+| --- | --- |
+| `main.py` | 桌面应用入口与 QML 加载 |
+| `qml/` | 页面、组件、弹窗和主题 |
+| `qt_app/` | Qt Bridge、列表模型及后台 Worker |
+| `models/`、`controllers/`、`services/`、`app/` | 数据模型、业务控制、Notion 服务和应用状态 |
+| `design/`、`assets/` | 运行时背景和应用图标 |
+| `tests/` | 自动测试与 QML 稳定性检查 |
+| `NotionTodoListV4.spec`、`build_v4_release.ps1` | Windows onedir 打包配置与脚本 |
 
 ## 安装与运行
 
+建议使用 Python 3.13 和 PowerShell。在项目根目录执行：
+
 ```powershell
-git clone https://github.com/brooke-cloud/Notion-TodoList.git
-cd Notion-TodoList
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 python main.py
 ```
 
-## Notion API 配置
-
-将 `.env.example` 复制为项目根目录的 `.env` 后填写自己的值：
-
-```env
-NOTION_TOKEN=secret_your_notion_integration_token
-NOTION_DATABASE_ID=your-task-database-id-or-url
-GOAL_DATABASE_ID=your-goal-database-id-or-url
-GOAL_DATA_SOURCE_ID=your-goal-data-source-id
-```
-
-- `NOTION_TOKEN` 是首选配置名；程序也兼容 `NOTION_API_KEY`。
-- `NOTION_DATABASE_ID` 用于任务数据库，可填写 ID 或完整 Notion 数据库链接。
-- `GOAL_DATABASE_ID` 用于目标数据库；未填写 `GOAL_DATA_SOURCE_ID` 时，程序会依据目标数据库尝试发现数据源。
-- 请在 Notion 中把相应数据库共享给你的 Integration，否则应用无法读取或写入数据。
+在 `.env` 中填写自己的 `NOTION_TOKEN`、`NOTION_DATABASE_ID` 和 `GOAL_DATABASE_ID`；必要时填写 `GOAL_DATA_SOURCE_ID`。程序也兼容 `NOTION_API_KEY`。请在 Notion 中将任务和目标数据库共享给对应的 Integration，并保持数据库属性与当前应用的映射一致。模板中的值只是占位符。
 
 ## Windows EXE 打包
 
-在已激活的虚拟环境中执行：
+在已安装依赖和 PyInstaller 的 Python 环境中执行：
 
 ```powershell
+python -m pip install pyinstaller
 .\build_v4_release.ps1
 ```
 
-脚本调用 PyInstaller，并生成 `dist\Notion TodoList V4` 的 onedir 发布目录。请分发整个目录，而不是只复制其中的 EXE；脚本会检查发布目录中是否意外出现 `.env` 或常见凭据文件。
+脚本使用 `NotionTodoListV4.spec` 构建 onedir 版本，输出到 `dist\Notion TodoList V4\`。运行其中的 `Notion TodoList.exe`；移动或分发时须保留整个目录及 `_internal` 子目录。脚本会检查关键 QML、背景、图标和证书资源，并在替换旧发布目录时保留原有发布目录旁的本地 `.env`。首次使用时应为发布目录单独配置 `.env`。
 
-## 安全说明
+## 数据与安全
 
-- `.env`、本地 `settings.json`、日志、缓存、构建产物和 EXE 均在 `.gitignore` 中排除；仅提交 `.env.example` 模板。
-- 不要提交或通过 Issue、日志、截图发送 Notion Token、数据库链接、个人任务数据或其他凭据。
-- 新增 `.gitignore` 无法移除已经提交的敏感信息；推送前也应检查待推送历史。
+源码运行时的 `.env` 和 `settings.json` 位于项目根目录；EXE 运行时从 EXE 所在目录读取配置。日报与启动日志保存在用户的 `%LOCALAPPDATA%\NotionTodoListV4\` 下。打包脚本当前会将项目根目录的 `settings.json` 复制到发布目录，分发前请检查并移除个人配置；也不要分发包含真实 `.env` 的发布目录。
 
-## 许可证
-
-当前仓库未声明开源许可证；使用、修改和再分发权限以仓库所有者后续发布的许可证为准。
+`.gitignore` 排除 `.env`、本地设置、日志、缓存、`build/`、`dist/` 和 EXE。不要将 Token、数据库链接或个人任务数据提交到仓库；已经进入 Git 历史的敏感信息不会因 `.gitignore` 而消失。

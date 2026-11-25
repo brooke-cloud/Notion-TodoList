@@ -10,8 +10,8 @@ Popup {
     property var selectedIds: []
     modal: true
     focus: true
-    width: 620
-    height: 610
+    width: Math.min(620, Overlay.overlay.width - 32)
+    height: Math.min(610, Overlay.overlay.height - 32)
     anchors.centerIn: Overlay.overlay
     background: GlassPanel { surfaceColor: Theme.panelStrong }
 

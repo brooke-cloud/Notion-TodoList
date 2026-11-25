@@ -5,7 +5,7 @@ import "../components"
 
 GlassPanel {
     id: root
-    surfaceColor: "#B20A2037"
+    surfaceColor: Theme.contentPanel
     property var data: appBridge.analyticsData || ({})
     property int gap: 14
     Flickable {
@@ -18,7 +18,7 @@ GlassPanel {
                 width: parent.width; columns: 4; spacing: root.gap
                 Repeater {
                     model: [{label:"\u4efb\u52a1\u603b\u6570",value:root.data.total||0},{label:"\u5df2\u5b8c\u6210",value:root.data.completed||0},{label:"\u5f85\u5b8c\u6210",value:root.data.pending||0},{label:"\u5b8c\u6210\u7387",value:(root.data.rate||0)+"%"}]
-                    GlassPanel { required property var modelData; width:(dashboard.width-root.gap*3)/4; height:104
+                    GlassPanel { required property var modelData; width:(dashboard.width-root.gap*3)/4; height:104; shadowEnabled:false
                         Column { anchors.centerIn:parent; spacing:6
                             Text { anchors.horizontalCenter:parent.horizontalCenter; text:modelData.value; color:Theme.accent; font.family:Theme.fontFamily; font.pixelSize:27; font.bold:true }
                             Text { anchors.horizontalCenter:parent.horizontalCenter; text:modelData.label; color:Theme.muted; font.family:Theme.fontFamily; font.pixelSize:Theme.fontBody }
@@ -53,7 +53,7 @@ GlassPanel {
                                     Text{width:parent.width-45;text:modelData.name;color:Theme.categoryColor(modelData.name);font.family:Theme.fontFamily;font.pixelSize:Theme.fontMeta}
                                     Text{text:modelData.count;color:Theme.text;font.family:Theme.fontFamily;font.pixelSize:Theme.fontMeta}
                                 }
-                                Rectangle { width:parent.width; height:8; radius:4; color:Theme.control; Rectangle{width:parent.width*Math.max(.02,modelData.count/Math.max(1,root.data.total||1));height:parent.height;radius:4;color:Theme.categoryColor(modelData.name)} }
+                                Rectangle { width:parent.width; height:8; radius:4; color:Theme.control; Rectangle{width:parent.width*Math.max(0,modelData.count/Math.max(1,root.data.total||1));height:parent.height;radius:4;color:Theme.categoryColor(modelData.name)} }
                             }
                         }
                     }

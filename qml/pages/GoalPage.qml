@@ -7,7 +7,7 @@ GlassPanel {
     id: root
     property var goalModel
     signal createRequested
-    surfaceColor: "#B20A2037"
+    surfaceColor: Theme.contentPanel
 
     Column {
         anchors.fill: parent
@@ -38,8 +38,7 @@ GlassPanel {
             width: parent.width
             height: 44
             spacing: 10
-            GlassInput { width: parent.width - 170; placeholderText: "\u641c\u7d22\u5927\u76ee\u6807\u3001\u63cf\u8ff0\u6216\u6807\u7b7e\u2026"; leadingIcon: "\u2315"; onTextChanged: appBridge.searchGoals(text) }
-            GlassButton { width: 160; text: "\u6240\u6709\u5206\u7c7b" }
+            GlassInput { width: parent.width; placeholderText: "\u641c\u7d22\u5927\u76ee\u6807\u3001\u63cf\u8ff0\u6216\u6807\u7b7e\u2026"; leadingIcon: "\u2315"; onTextChanged: appBridge.searchGoals(text) }
         }
 
         ListView {

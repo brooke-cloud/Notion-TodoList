@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from uuid import uuid4
 from datetime import date, timedelta
 from pathlib import Path
@@ -24,7 +26,7 @@ class AppBridge(QObject):
     selectedGoalChanged=Signal(); analyticsChanged=Signal(); settingsChanged=Signal()
     taskStatusFilterChanged=Signal(); reportHistoryChanged=Signal(); dailyReportRequested=Signal(dict)
     toastRequested=Signal(str,str); taskEditRequested=Signal(dict); goalCreateRequested=Signal()
-    taskSaveSucceeded=Signal(str); taskSaveFailed=Signal(str,str); goalCreateSucceeded=Signal(); goalCreateFailed=Signal(str)
+    taskSaveSucceeded=Signal(str); taskSaveFailed=Signal(str,str); taskCreateSucceeded=Signal(); taskCreateFailed=Signal(str); goalCreateSucceeded=Signal(); goalCreateFailed=Signal(str)
     smallTaskCreated=Signal(); smallTaskFailed=Signal(str); relationBatchFinished=Signal(int,int)
 
     def __init__(self,base_dir:Path,parent=None):
@@ -37,7 +39,7 @@ class AppBridge(QObject):
         self.task_cache={}; self.task_request_generation=0; self._task_cache_generation={}; self._task_loading=False; self._task_requests=set()
         self._task_load_state="idle";self._task_load_error=""
         self._task_status_filter="全部"; self.report_store=DailyReportStore(); self.daily_workflow=DailyWorkflow(self.report_store)
-        self._report_history=[]; self._daily_workflow_running=False; self._last_shanghai_date=shanghai_now().date()
+        self._report_history=[]; self._daily_workflow_running=False; self._daily_retry_pending=False; self._last_shanghai_date=shanghai_now().date()
         self._toggle_sync={};self._relation_pending=set();self._goal_status_sync={}
         self._manual_goal_statuses=set(self.state.settings.get("manual_goal_statuses",[]))
         self._timer=QTimer(self); self._timer.setInterval(1000); self._timer.timeout.connect(self._tick_focus)
@@ -50,8 +52,16 @@ class AppBridge(QObject):
         try:return {**defaults,**json.loads((self.base_dir/"settings.json").read_text(encoding="utf-8"))}
         except (OSError,ValueError):return defaults
     def _save_settings(self):
-        try:(self.base_dir/"settings.json").write_text(json.dumps(self.state.settings,ensure_ascii=False,indent=2),encoding="utf-8")
+        temporary=None
+        try:
+            with tempfile.NamedTemporaryFile(mode="w",encoding="utf-8",dir=self.base_dir,prefix=".settings-",suffix=".tmp",delete=False) as stream:
+                temporary=Path(stream.name)
+                json.dump(self.state.settings,stream,ensure_ascii=False,indent=2)
+                stream.flush();os.fsync(stream.fileno())
+            os.replace(temporary,self.base_dir/"settings.json")
         except OSError as exc:self.toastRequested.emit(str(exc),"error")
+        finally:
+            if temporary is not None:temporary.unlink(missing_ok=True)
     def _apply_settings_runtime(self):
         if self.state.settings.get("auto_sync_enabled",False):
             self._auto_sync_timer.start(max(60,int(self.state.settings.get("auto_sync_seconds",1800)))*1000)
@@ -161,16 +171,18 @@ class AppBridge(QObject):
         current=shanghai_now().date()
         if current!=self._last_shanghai_date:
             self._last_shanghai_date=current;self._run_daily_workflow(startup=False)
+        elif self._daily_retry_pending:
+            self._run_daily_workflow(startup=False)
 
     def _run_daily_workflow(self,startup=False):
         if not self.service or self._daily_workflow_running:return
         self._daily_workflow_running=True
         enabled=bool(self.state.settings.get("daily_auto_postpone",True))
         def success(_result):
-            self._daily_workflow_running=False;self.task_cache.clear();self.loadAll();self._reload_report_history()
+            self._daily_workflow_running=False;self._daily_retry_pending=False;self.task_cache.clear();self.loadAll();self._reload_report_history()
             if self.state.settings.get("daily_report_auto_show",True):QTimer.singleShot(500,self._show_pending_report)
         def failed(message):
-            self._daily_workflow_running=False;self.toastRequested.emit(f"每日顺延待重试：{message}","error");self.loadAll();self._daily_timer.start(30000)
+            self._daily_workflow_running=False;self._daily_retry_pending=True;self.toastRequested.emit(f"每日顺延待重试：{message}","error");self.loadAll();self._daily_timer.start(30000)
         self._run(lambda:self.daily_workflow.run(self.service,auto_postpone=enabled),success,failed)
 
     def _cache_key(self,view,target):
@@ -264,6 +276,32 @@ class AppBridge(QObject):
     @Slot(str)
     def createTask(self,title):
         if title.strip():self._run(lambda:self.todo.create_task(title.strip()),lambda _:self._request_current_tasks())
+    @Slot()
+    def newTask(self):
+        self.taskEditRequested.emit({
+            "creating":True,"title":"","category":"未分类","priority":"P1",
+            "repeatType":"单次","date":shanghai_now().date().isoformat(),"goalId":"",
+            "goalOptions":[{"id":goal["id"],"title":goal["title"]} for goal in self.goal_model._all
+                           if goal["status"] in ("Not Started","In Progress")],
+        })
+    @Slot(str,str,str,str,str,str)
+    def createTaskDetailed(self,title,category,priority,repeat_type,task_date,goal_id):
+        title=title.strip()
+        if not title:
+            self.taskCreateFailed.emit("请输入任务标题");return
+        try:target=date.fromisoformat(task_date)
+        except ValueError:
+            self.taskCreateFailed.emit("日期格式应为 YYYY-MM-DD");return
+        notion_priority={"P0":"高","P1":"中","P2":"低"}.get(priority,priority)
+        repeat_type=repeat_type if repeat_type in ("单次","每天") else "单次"
+        def create():
+            self.service.create_task(title,target,repeat_type,notion_priority,category,goal_id or None)
+        def success(_):
+            self.taskCreateSucceeded.emit();self.toastRequested.emit("任务已添加","success")
+            self._request_current_tasks();self._refresh_reference_data()
+        def failure(message):
+            self.taskCreateFailed.emit(message);self.toastRequested.emit(message,"error")
+        self._run(create,success,failure)
     def _task(self,task_id):return self.task_model.task_object(task_id)
     def _sync_task_cache(self,task_id,**changes):
         attributes={"title":"title","category":"project","priority":"priority","repeatType":"repeat_type","date":"date","status":"status","isDone":"is_done","goalId":"goal_id","goalTitle":"goal_title"}
@@ -418,7 +456,7 @@ class AppBridge(QObject):
         def failed(message):
             self.state.goal_tasks.append(task);self._cache_new_task(task);self.all_task_model.insert_task(task);self.task_model.insert_task(task)
             self._goal_progress_delta(goal_id,1,completed);self.summaryChanged.emit();self.refreshAnalytics();self.toastRequested.emit(message,"error")
-        self._run(lambda:self.service.delete_task(task.id),lambda _:None,failed)
+        self._run(lambda:self.service.delete_task(task.id),lambda _:self.toastRequested.emit("任务已删除","success"),failed)
     @Slot(str)
     def editTask(self,task_id):
         item=self.task_model.item(task_id)

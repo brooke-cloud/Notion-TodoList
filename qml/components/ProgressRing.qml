@@ -19,7 +19,7 @@ Item {
             ctx.lineWidth = 7
             ctx.strokeStyle = "#274967"
             ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke()
-            ctx.shadowColor = Theme.glow; ctx.shadowBlur = 15
+            ctx.shadowColor = Theme.glow; ctx.shadowBlur = 7
             const gradient = ctx.createLinearGradient(0, 0, width, height)
             gradient.addColorStop(0, Theme.accentTop); gradient.addColorStop(1, Theme.accent)
             ctx.strokeStyle = gradient

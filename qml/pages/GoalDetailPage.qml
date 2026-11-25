@@ -5,7 +5,7 @@ import "../components"
 import "../dialogs"
 
 GlassPanel {
-    id:root;property var taskModel;property int tabIndex:0;surfaceColor:"#B20A2037"
+    id:root;property var taskModel;property int tabIndex:0;surfaceColor:Theme.contentPanel
     Column{anchors.fill:parent;anchors.margins:20;spacing:12
         GlassButton{width:88;height:38;text:"‹ 返回";onClicked:appBridge.closeGoal()}
         Row{width:parent.width;height:70
@@ -15,7 +15,7 @@ GlassPanel {
                 GlassInput{
                     id:renameField
                     visible:false
-                    width:520
+                    width:Math.min(520,parent.width)
                     text:""
                     onAccepted:{if(text.trim()){appBridge.renameGoal(appBridge.selectedGoalId,text.trim())} visible=false}
                     Keys.onEscapePressed:visible=false

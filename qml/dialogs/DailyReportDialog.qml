@@ -9,8 +9,8 @@ Popup {
     property var report: ({})
     modal: true
     focus: true
-    width: 680
-    height: Math.min(610, reportPanel.height + 240)
+    width: Math.min(680, Overlay.overlay.width - 32)
+    height: Math.min(610, Overlay.overlay.height - 32, reportPanel.height + 240)
     anchors.centerIn: Overlay.overlay
     background: GlassPanel { surfaceColor: Theme.panelStrong }
     function showReport(value) { report = value || ({}); open() }

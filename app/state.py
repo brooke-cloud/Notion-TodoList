@@ -21,6 +21,7 @@ class AppState:
     timer_running: bool = False
     current_time_left: int = 25 * 60
     timer_minutes: int = 25
+    timer_deadline: float | None = None
     current_section: str = "tasks"
     current_goal_id: str | None = None
     current_goal_title: str | None = None

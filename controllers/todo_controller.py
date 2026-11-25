@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+import time
 
 from app.state import AppState
 from controllers.report_data import DailyReportData
@@ -229,11 +230,17 @@ class TodoController:
 
     def set_timer_mode(self, minutes: int) -> int:
         self.app_state.timer_running = False
+        self.app_state.timer_deadline = None
         self.app_state.timer_minutes = minutes
         self.app_state.current_time_left = minutes * 60
         return self.app_state.current_time_left
 
     def set_timer_running(self, running: bool) -> bool:
+        if running and not self.app_state.timer_running:
+            self.app_state.timer_deadline = time.monotonic() + self.app_state.current_time_left
+        elif not running and self.app_state.timer_running:
+            self.tick_timer()
+            self.app_state.timer_deadline = None
         self.app_state.timer_running = running
         return self.app_state.timer_running
 
@@ -244,10 +251,11 @@ class TodoController:
         return self.app_state.current_time_left
 
     def tick_timer(self) -> int:
-        if self.app_state.timer_running and self.app_state.current_time_left > 0:
-            self.app_state.current_time_left -= 1
+        if self.app_state.timer_running and self.app_state.timer_deadline is not None:
+            self.app_state.current_time_left = max(0, int(self.app_state.timer_deadline - time.monotonic() + 0.999999))
         if self.app_state.current_time_left <= 0:
             self.app_state.timer_running = False
+            self.app_state.timer_deadline = None
         return self.app_state.current_time_left
 
     def select_focus_task(self, task_title: str) -> str:

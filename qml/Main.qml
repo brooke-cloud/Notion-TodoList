@@ -48,7 +48,7 @@ ApplicationWindow {
             id: titleBar
             anchors { left: parent.left; right: parent.right; top: parent.top }
             height: 44
-            color: "#D007192C"
+            color: Theme.panelStrong
             border.width: 1
             border.color: Theme.borderSoft
             Row {
@@ -122,8 +122,8 @@ ApplicationWindow {
     TaskEditDialog{id:taskEdit;goalModel:goalListModel}
     GoalCreateDialog{id:goalCreate}
     DailyReportDialog{id:dailyReport}
-    Rectangle{id:toast;width:Math.min(520,toastText.implicitWidth+40);height:46;radius:12;color:"#E51B3048";border.color:toast.kind==="error"?Theme.danger:Theme.borderActive;visible:false;anchors.horizontalCenter:parent.horizontalCenter;anchors.bottom:parent.bottom;anchors.bottomMargin:24;property string kind:"info"
-        Text{id:toastText;anchors.centerIn:parent;color:Theme.text;font.family:Theme.fontFamily}
+    Rectangle{id:toast;width:Math.min(520,Math.max(180,toastText.implicitWidth+40));height:Math.max(46,toastText.implicitHeight+24);radius:Theme.radiusControl;color:Theme.panelStrong;border.width:1;border.color:toast.kind==="error"?Theme.danger:toast.kind==="success"?Theme.success:Theme.borderActive;visible:false;anchors.horizontalCenter:parent.horizontalCenter;anchors.bottom:parent.bottom;anchors.bottomMargin:24;property string kind:"info"
+        Text{id:toastText;anchors.centerIn:parent;width:parent.width-32;wrapMode:Text.Wrap;color:Theme.text;font.family:Theme.fontFamily;font.pixelSize:Theme.fontBody;horizontalAlignment:Text.AlignHCenter}
         Timer{id:toastTimer;interval:3600;onTriggered:toast.visible=false}
     }
     Connections{target:appBridge

@@ -3,7 +3,7 @@ import QtQuick.Controls
 import ".."
 import "../components"
 
-Popup{id:root;modal:true;focus:true;width:560;height:430;anchors.centerIn:Overlay.overlay;background:GlassPanel{surfaceColor:Theme.panelStrong}
+Popup{id:root;modal:true;focus:true;width:Math.min(560,Overlay.overlay.width-32);height:Math.min(430,Overlay.overlay.height-32);anchors.centerIn:Overlay.overlay;background:GlassPanel{surfaceColor:Theme.panelStrong}
     property bool saving:false
     Column{anchors.fill:parent;anchors.margins:24;spacing:14
         Text{text:"新建大目标";color:Theme.text;font.family:Theme.fontFamily;font.pixelSize:Theme.fontSection;font.bold:true}

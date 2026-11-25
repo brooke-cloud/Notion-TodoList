@@ -10,6 +10,7 @@ $StagingWork = Join-Path $StagingRoot "work"
 $BuiltDir = Join-Path $StagingDist "Notion TodoList V4"
 $PrivateEnvBackup = Join-Path $StagingRoot "private.env"
 $ExistingEnv = Join-Path $ReleaseDir ".env"
+$PreviousDir = Join-Path $DistRoot "Notion TodoList V4.previous"
 
 if (Test-Path -LiteralPath $StagingRoot) {
     Remove-Item -LiteralPath $StagingRoot -Recurse -Force
@@ -91,13 +92,30 @@ if ($Forbidden) {
 if (-not (Test-Path -LiteralPath $DistRoot)) {
     New-Item -ItemType Directory -Path $DistRoot -Force | Out-Null
 }
-if (Test-Path -LiteralPath $ReleaseDir) {
-    Remove-Item -LiteralPath $ReleaseDir -Recurse -Force
+if (Test-Path -LiteralPath $PreviousDir) {
+    throw "Previous release backup exists; inspect it before replacing: $PreviousDir"
 }
-Move-Item -LiteralPath $BuiltDir -Destination $ReleaseDir
+if (Test-Path -LiteralPath $ReleaseDir) {
+    $RunningRelease = Get-CimInstance Win32_Process | Where-Object {
+        $_.Name -eq "Notion TodoList.exe" -and $_.ExecutablePath -and
+        $_.ExecutablePath.StartsWith($ReleaseDir, [System.StringComparison]::OrdinalIgnoreCase)
+    }
+    if ($RunningRelease) { throw "Close the running V4 EXE before replacing the release." }
+    Move-Item -LiteralPath $ReleaseDir -Destination $PreviousDir
+}
+try {
+    Move-Item -LiteralPath $BuiltDir -Destination $ReleaseDir
+    if (Test-Path -LiteralPath $PrivateEnvBackup) {
+        Copy-Item -LiteralPath $PrivateEnvBackup -Destination (Join-Path $ReleaseDir ".env") -Force
+    }
+} catch {
+    if (Test-Path -LiteralPath $ReleaseDir) { Remove-Item -LiteralPath $ReleaseDir -Recurse -Force }
+    if (Test-Path -LiteralPath $PreviousDir) { Move-Item -LiteralPath $PreviousDir -Destination $ReleaseDir }
+    throw
+}
+if (Test-Path -LiteralPath $PreviousDir) { Remove-Item -LiteralPath $PreviousDir -Recurse -Force }
 
 if (Test-Path -LiteralPath $PrivateEnvBackup) {
-    Copy-Item -LiteralPath $PrivateEnvBackup -Destination (Join-Path $ReleaseDir ".env") -Force
     Remove-Item -LiteralPath $PrivateEnvBackup -Force
     Write-Host "Preserved existing local .env next to the rebuilt EXE; it was not bundled by PyInstaller."
 }

@@ -1,4 +1,5 @@
 import time
+import tempfile
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
@@ -132,6 +133,41 @@ class DateCacheTests(unittest.TestCase):
         self.bridge._set_task_load_state("refreshing")
         self.bridge.manualSync()
         self.assertEqual(calls,["tasks","references"])
+
+    def test_daily_failure_retries_on_next_tick_same_day(self):
+        attempts=[]
+        self.bridge.daily_workflow.run=lambda *_args,**_kwargs: attempts.append(True)
+        calls=[]
+        def run(function,success=None,failure=None):
+            calls.append(True)
+            if len(calls)==1:failure("offline")
+            else:success(function())
+        self.bridge._run=run
+        self.bridge.loadAll=lambda:None
+        self.bridge._run_daily_workflow()
+        self.assertTrue(self.bridge._daily_retry_pending)
+        self.bridge._check_daily_transition()
+        self.assertEqual(len(attempts),1)
+        self.assertFalse(self.bridge._daily_retry_pending)
+
+    def test_settings_save_replaces_complete_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.bridge.base_dir=Path(directory)
+            target=self.bridge.base_dir/"settings.json"
+            target.write_text('{"old": true}',encoding="utf-8")
+            self.bridge.state.settings["default_focus_minutes"]=42
+            self.bridge._save_settings()
+            import json
+            self.assertEqual(json.loads(target.read_text(encoding="utf-8"))["default_focus_minutes"],42)
+            self.assertFalse(list(self.bridge.base_dir.glob(".settings-*.tmp")))
+
+    def test_focus_elapsed_time_survives_delayed_tick(self):
+        from unittest.mock import patch
+        with patch("controllers.todo_controller.time.monotonic",side_effect=[100.0,105.2]):
+            self.bridge.todo.set_timer_mode(1)
+            self.bridge.todo.set_timer_running(True)
+            self.bridge.todo.tick_timer()
+        self.assertEqual(self.bridge.state.current_time_left,55)
 
     def test_uncached_switch_returns_under_50ms_during_two_second_network_delay(self):
         tomorrow = date.today() + timedelta(days=1); self.service.delays[tomorrow] = 1.2

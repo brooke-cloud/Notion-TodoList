@@ -6,7 +6,7 @@ GlassPanel {
     property string currentSection: "tasks"
     signal sectionSelected(string section)
     panelRadius: 0
-    surfaceColor: "#C70B2239"
+    surfaceColor: Theme.panelStrong
     strokeColor: "transparent"
     shadowOpacity: 0.2
 

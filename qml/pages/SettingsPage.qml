@@ -5,7 +5,7 @@ import "../components"
 
 GlassPanel {
     id: root
-    surfaceColor: "#B20A2037"
+    surfaceColor: Theme.contentPanel
     function value(key, fallback) { return appBridge.settings[key] === undefined ? fallback : appBridge.settings[key] }
     ScrollView {
         anchors.fill: parent; anchors.margins: 24; clip: true
